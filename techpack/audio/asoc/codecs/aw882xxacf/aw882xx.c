@@ -44,6 +44,7 @@
 static unsigned int g_aw882xx_dev_cnt = 0;
 static unsigned int g_print_dbg = 0;
 static unsigned int g_algo_rx_en = false;
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 static unsigned int g_algo_tx_en = false;
 static unsigned int g_algo_copp_en = false;
 #ifdef AW_SPIN_ENABLE
@@ -3405,3 +3406,5 @@ module_exit(aw882xx_i2c_exit);
 
 MODULE_DESCRIPTION("ASoC AW882XX Smart PA Driver");
 MODULE_LICENSE("GPL v2");
+/* suppress warning */
+/* suppress warning */
