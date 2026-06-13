@@ -29,6 +29,8 @@ jobs:
       - name: Apply KSU-Next
         run: |
           curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s next
+          # Fix sucompat.c pgtable.h not available on 5.4
+          find . -name "sucompat.c" | xargs sed -i "s|#include <linux/pgtable.h>|#include <linux/mm.h>|g" 2>/dev/null || true
 
       - name: Apply SuSFS patch
         run: |
