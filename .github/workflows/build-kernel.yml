@@ -1,0 +1,81 @@
+name: Build Kernel - fogo KSU-Next + SuSFS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ lineage-23.2 ]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git make flex bison build-essential \
+            libssl-dev bc curl wget zip python3 libarchive-tools \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+
+      - name: Setup Clang toolchain
+        run: |
+          mkdir -p ~/toolchains/clang
+          wget -q https://github.com/ZyCromerZ/Clang/releases/download/18.0.0-20240101-release/Clang-18.0.0-20240101.tar.gz -O clang.tar.gz
+          tar -xf clang.tar.gz -C ~/toolchains/clang --strip-components=1
+          echo "$HOME/toolchains/clang/bin" >> $GITHUB_PATH
+
+      - name: Apply KSU-Next
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s next
+
+      - name: Apply SuSFS patch
+        run: |
+          wget -q "https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/mainline/Patches/Patch/susfs_patch_to_5.4.patch" -O susfs.patch
+          patch -p1 < susfs.patch || echo "WARNING: Some hunks failed, check output"
+
+      - name: Setup AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3 ../AnyKernel3
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/' ../AnyKernel3/anykernel.sh
+          sed -i 's/^device.name1=.*/device.name1=fogo/' ../AnyKernel3/anykernel.sh
+
+      - name: Build kernel
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          export CC=clang
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export LLVM=1
+          export LLVM_IAS=1
+
+          make O=out vendor/sm6375_defconfig vendor/fogos_defconfig
+          make O=out -j$(nproc --all) 2>&1 | tee build.log
+
+      - name: Package flashable zip
+        run: |
+          cp out/arch/arm64/boot/Image ../AnyKernel3/
+          cp out/arch/arm64/boot/dtbo.img ../AnyKernel3/ 2>/dev/null || true
+          mkdir -p ../AnyKernel3/modules
+          find out -name "*.ko" -exec cp {} ../AnyKernel3/modules/ \; 2>/dev/null || true
+          cd ../AnyKernel3
+          zip -r9 ../kernel-fogo-ksunext-susfs-$(date +%Y%m%d).zip . -x '*.git*'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-fogo-ksunext-susfs
+          path: kernel-*.zip
+          retention-days: 7
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
