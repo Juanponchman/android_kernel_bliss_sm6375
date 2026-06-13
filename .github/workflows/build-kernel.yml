@@ -54,7 +54,7 @@ jobs:
           export LLVM=1
           export LLVM_IAS=1
 
-          make O=out vendor/sm6375_defconfig vendor/fogos_defconfig
+          make O=out vendor/holi-qgki_defconfig
           make O=out -j$(nproc --all) 2>&1 | tee build.log
 
       - name: Package flashable zip
