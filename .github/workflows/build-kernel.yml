@@ -19,14 +19,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git make flex bison build-essential \
             libssl-dev bc curl wget zip python3 libarchive-tools \
-            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi binutils-aarch64-linux-gnu
 
-      - name: Setup Clang toolchain
+      - name: Setup Neutron Clang
         run: |
-          mkdir -p ~/toolchains/clang
-          wget -q https://github.com/ZyCromerZ/Clang/releases/download/18.0.0-20240101-release/Clang-18.0.0-20240101.tar.gz -O clang.tar.gz
-          tar -xf clang.tar.gz -C ~/toolchains/clang --strip-components=1
-          echo "$HOME/toolchains/clang/bin" >> $GITHUB_PATH
+          mkdir -p ~/toolchains/neutron-clang
+          cd ~/toolchains/neutron-clang
+          bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") -S
+          echo "$HOME/toolchains/neutron-clang/bin" >> $GITHUB_PATH
 
       - name: Apply KSU-Next
         run: |
