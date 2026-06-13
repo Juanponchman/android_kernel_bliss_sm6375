@@ -29,6 +29,8 @@ jobs:
       - name: Apply KSU-Next
         run: |
           curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s next
+          # Fix pkg_observer fsnotify compat for 5.4 kernel
+          find . -path "*/kernelsu/manager/pkg_observer.c" -exec sed -i "s/\.handle_inode_event = ksu_handle_inode_event/.handle_event = (void *)ksu_handle_inode_event/" {} \;
           # Fix sucompat.c pgtable.h not available on 5.4
           find . -name "sucompat.c" | xargs sed -i "s|#include <linux/pgtable.h>|#include <linux/mm.h>|g" 2>/dev/null || true
 
